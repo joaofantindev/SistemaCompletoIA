@@ -1,0 +1,39 @@
+@model CompraCreateDTO
+
+@{
+    ViewData["Title"] = "Comprar produto";
+    var produtosDisponiveis = (IReadOnlyList<ProdutoRespostaDTO>)ViewBag.ProdutosDisponiveis;
+}
+
+<h1>Comprar produto</h1>
+
+<form asp-action="Create" method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="mb-3">
+        <label asp-for="ProdutoId" class="form-label">Produto</label>
+        <select asp-for="ProdutoId" class="form-select">
+            <option value="">Selecione um produto</option>
+            @foreach (var produto in produtosDisponiveis)
+            {
+                <option value="@produto.Id">
+                    @produto.Nome (@produto.NomeCategoria) - R$ @produto.Preco.ToString("N2")
+                </option>
+            }
+        </select>
+        <span asp-validation-for="ProdutoId" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Quantidade" class="form-label"></label>
+        <input asp-for="Quantidade" class="form-control" type="number" min="1" max="9999" />
+        <span asp-validation-for="Quantidade" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Confirmar compra</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

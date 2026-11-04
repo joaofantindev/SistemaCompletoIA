@@ -1,0 +1,27 @@
+@model UsuarioResponseDTO
+
+@{
+    ViewData["Title"] = "Detalhes do usuário";
+}
+
+<h1>Detalhes do usuário</h1>
+
+<dl class="row">
+    <dt class="col-sm-2">Nome</dt>
+    <dd class="col-sm-10">@Model.Nome</dd>
+
+    <dt class="col-sm-2">E-mail</dt>
+    <dd class="col-sm-10">@Model.Email</dd>
+
+    <dt class="col-sm-2">Perfil</dt>
+    <dd class="col-sm-10">@Model.Perfil</dd>
+
+    <dt class="col-sm-2">Ativo</dt>
+    <dd class="col-sm-10">@(Model.Ativo ? "Sim" : "Não")</dd>
+
+    <dt class="col-sm-2">Criado em</dt>
+    <dd class="col-sm-10">@Model.CriadoEm.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</dd>
+</dl>
+
+<a asp-action="Edit" asp-route-identificador="@Model.Id" class="btn btn-primary">Editar</a>
+<a asp-action="Index" class="btn btn-secondary">Voltar</a>

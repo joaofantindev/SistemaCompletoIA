@@ -1,0 +1,51 @@
+@model IReadOnlyList<CompraRespostaDTO>
+
+@{
+    ViewData["Title"] = "Compras";
+    var usuarioEhAdministrador = User.IsInRole(PerfisAcesso.Administrador);
+}
+
+<h1>@(usuarioEhAdministrador ? "Todas as compras" : "Minhas compras")</h1>
+
+@if (TempData["Sucesso"] is string mensagemSucesso)
+{
+    <div class="alert alert-success">@mensagemSucesso</div>
+}
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Comprar produto</a>
+</p>
+
+<table class="table table-striped align-middle">
+    <thead>
+        <tr>
+            @if (usuarioEhAdministrador)
+            {
+                <th>Cliente</th>
+            }
+            <th>Produto</th>
+            <th>Quantidade</th>
+            <th>Valor unitário</th>
+            <th>Desconto</th>
+            <th>Total</th>
+            <th>Data</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var compra in Model)
+    {
+        <tr>
+            @if (usuarioEhAdministrador)
+            {
+                <td>@compra.NomeCliente</td>
+            }
+            <td>@compra.NomeProduto</td>
+            <td>@compra.Quantidade</td>
+            <td>R$ @compra.ValorUnitario.ToString("N2")</td>
+            <td>@compra.PercentualDescontoAplicado.ToString("N2")%</td>
+            <td>R$ @compra.ValorTotal.ToString("N2")</td>
+            <td>@compra.RealizadaEm.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+        </tr>
+    }
+    </tbody>
+</table>

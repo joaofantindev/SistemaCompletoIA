@@ -1,0 +1,41 @@
+@model RegistroAcessoRespostaDTO
+
+@{
+    ViewData["Title"] = "Detalhes do log";
+}
+
+<h1>Detalhes do log</h1>
+
+<dl class="row">
+    <dt class="col-sm-2">Data</dt>
+    <dd class="col-sm-10">@Model.OcorridoEm.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</dd>
+
+    <dt class="col-sm-2">Usuário</dt>
+    <dd class="col-sm-10">@Model.NomeUsuario</dd>
+
+    <dt class="col-sm-2">E-mail</dt>
+    <dd class="col-sm-10">@Model.Email</dd>
+
+    <dt class="col-sm-2">Ação</dt>
+    <dd class="col-sm-10">@Model.TipoAcao</dd>
+
+    <dt class="col-sm-2">Método</dt>
+    <dd class="col-sm-10">@Model.MetodoHttp</dd>
+
+    <dt class="col-sm-2">Caminho</dt>
+    <dd class="col-sm-10">@Model.Caminho</dd>
+
+    <dt class="col-sm-2">Status</dt>
+    <dd class="col-sm-10">@Model.CodigoStatus</dd>
+
+    <dt class="col-sm-2">Endereço IP</dt>
+    <dd class="col-sm-10">@Model.EnderecoIp</dd>
+
+    <dt class="col-sm-2">Navegador</dt>
+    <dd class="col-sm-10">@Model.Navegador</dd>
+
+    <dt class="col-sm-2">Detalhes</dt>
+    <dd class="col-sm-10">@Model.Detalhes</dd>
+</dl>
+
+<a asp-action="Index" class="btn btn-secondary">Voltar</a>

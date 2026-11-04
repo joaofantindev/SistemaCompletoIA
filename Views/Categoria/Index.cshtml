@@ -1,0 +1,60 @@
+@model IReadOnlyList<CategoriaRespostaDTO>
+
+@{
+    ViewData["Title"] = "Categorias";
+    var podeGerenciar = User.IsInRole(PerfisAcesso.Administrador) || User.IsInRole(PerfisAcesso.Gerente);
+}
+
+<h1>Categorias</h1>
+
+@if (TempData["Sucesso"] is string mensagemSucesso)
+{
+    <div class="alert alert-success">@mensagemSucesso</div>
+}
+
+@if (TempData["Erro"] is string mensagemErro)
+{
+    <div class="alert alert-danger">@mensagemErro</div>
+}
+
+@if (podeGerenciar)
+{
+    <p>
+        <a asp-action="Create" class="btn btn-primary">Nova categoria</a>
+    </p>
+}
+
+<table class="table table-striped align-middle">
+    <thead>
+        <tr>
+            <th>Nome</th>
+            <th>Descrição</th>
+            <th>Produtos</th>
+            <th>Ativa</th>
+            <th>Criada em</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var categoria in Model)
+    {
+        <tr>
+            <td>@categoria.Nome</td>
+            <td>@categoria.Descricao</td>
+            <td>@categoria.QuantidadeProdutos</td>
+            <td>@(categoria.Ativa ? "Sim" : "Não")</td>
+            <td>@categoria.CriadaEm.ToLocalTime().ToString("dd/MM/yyyy")</td>
+            <td class="text-nowrap">
+                <a asp-action="Details" asp-route-identificador="@categoria.Id">Detalhes</a>
+                @if (podeGerenciar)
+                {
+                    <text> | </text>
+                    <a asp-action="Edit" asp-route-identificador="@categoria.Id">Editar</a>
+                    <text> | </text>
+                    <a asp-action="Delete" asp-route-identificador="@categoria.Id">Excluir</a>
+                }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>

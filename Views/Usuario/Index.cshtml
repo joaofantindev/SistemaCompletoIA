@@ -1,0 +1,51 @@
+@model IReadOnlyList<UsuarioResponseDTO>
+
+@{
+    ViewData["Title"] = "Usuários";
+}
+
+<h1>Usuários</h1>
+
+@if (TempData["Sucesso"] is string mensagemSucesso)
+{
+    <div class="alert alert-success">@mensagemSucesso</div>
+}
+
+@if (TempData["Erro"] is string mensagemErro)
+{
+    <div class="alert alert-danger">@mensagemErro</div>
+}
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Novo usuário</a>
+</p>
+
+<table class="table table-striped align-middle">
+    <thead>
+        <tr>
+            <th>Nome</th>
+            <th>E-mail</th>
+            <th>Perfil</th>
+            <th>Ativo</th>
+            <th>Criado em</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var usuario in Model)
+    {
+        <tr>
+            <td>@usuario.Nome</td>
+            <td>@usuario.Email</td>
+            <td>@usuario.Perfil</td>
+            <td>@(usuario.Ativo ? "Sim" : "Não")</td>
+            <td>@usuario.CriadoEm.ToLocalTime().ToString("dd/MM/yyyy")</td>
+            <td class="text-nowrap">
+                <a asp-action="Edit" asp-route-identificador="@usuario.Id">Editar</a> |
+                <a asp-action="Details" asp-route-identificador="@usuario.Id">Detalhes</a> |
+                <a asp-action="Delete" asp-route-identificador="@usuario.Id">Excluir</a>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>

@@ -1,0 +1,1458 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0b0f1a" />
+  <title>Guia · CRUD de Usuários com DTO, SOLID e SRP</title>
+  <meta name="description" content="Guia prático em HTML e CSS para criar um CRUD de usuários em ASP.NET Core MVC com DTO, SOLID, responsabilidade única e Services." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body id="top">
+  <div class="shell">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar">
+      <a class="brand" href="#top">
+        <span class="brand-mark">CRUD</span>
+        <span>
+          <strong>Guia prático</strong>
+          <small>DTO · SOLID · SRP</small>
+        </span>
+      </a>
+
+      <nav aria-label="Sumário do guia">
+        <p class="nav-label">Conteúdo</p>
+        <a href="#visao-geral"><span>01</span> Visão geral</a>
+        <a href="#estrutura"><span>02</span> Estrutura de pastas</a>
+        <a href="#entidade"><span>03</span> Entidade</a>
+        <a href="#dtos"><span>04</span> DTOs</a>
+        <a href="#dbcontext"><span>05</span> DbContext</a>
+        <a href="#interface"><span>06</span> Interface do service</a>
+        <a href="#service"><span>07</span> Service (o coração)</a>
+        <a href="#mapper"><span>08</span> Mapper</a>
+        <a href="#controller"><span>09</span> Controller magro</a>
+        <a href="#views"><span>10</span> Views</a>
+        <a href="#di"><span>11</span> Injeção de dependência</a>
+        <a href="#solid"><span>12</span> SOLID na prática</a>
+        <a href="#erros"><span>13</span> Erros comuns</a>
+        <a href="#proximos"><span>14</span> Próximos passos</a>
+      </nav>
+
+      <div class="sidebar-note">
+        <strong>Stack do guia</strong>
+        <p>.NET 10 · ASP.NET Core MVC · EF Core · SQLite · C# 14</p>
+      </div>
+    </aside>
+
+    <!-- ================= CONTEÚDO ================= -->
+    <main class="content">
+      <div class="content-inner">
+
+        <!-- ================= HERO ================= -->
+        <header class="hero">
+          <p class="eyebrow">Guia prático · ASP.NET Core MVC</p>
+          <h1>CRUD de usuários do jeito certo: <em>DTO, SOLID e SRP</em> na prática</h1>
+          <p>
+            Você vai sair de um controller que faz tudo para uma arquitetura em camadas:
+            o controller só fala HTTP, o service cuida das regras e os DTOs controlam
+            o que entra e o que sai. Sem mágica, com código que você consegue testar.
+          </p>
+          <div class="chips">
+            <span class="chip">.NET 10</span>
+            <span class="chip">EF Core + SQLite</span>
+            <span class="chip">DTO</span>
+            <span class="chip">SRP</span>
+            <span class="chip">SOLID</span>
+            <span class="chip">~20 min de leitura</span>
+          </div>
+          <a class="hero-cta" href="#visao-geral">Começar a leitura <span>→</span></a>
+        </header>
+
+        <!-- ================= 01 VISÃO GERAL ================= -->
+        <section id="visao-geral">
+          <div class="sec-head">
+            <span class="step">01</span>
+            <div>
+              <h2>Visão geral: cada peça com um único trabalho</h2>
+              <p>O mapa mental antes de escrever a primeira linha.</p>
+            </div>
+          </div>
+
+          <p class="lead">
+            CRUD é só <strong>C</strong>reate, <strong>R</strong>ead, <strong>U</strong>pdate e
+            <strong>D</strong>elete. A dificuldade não está nas quatro operações — está em
+            <strong>onde colocar cada responsabilidade</strong>. É aí que entram DTO, Service e SOLID.
+          </p>
+
+          <div class="flow" role="img" aria-label="Fluxo: Controller recebe o DTO, chama o Service, que usa o DbContext para acessar o SQLite">
+            <div class="flow-node">
+              <span class="tag">1 · HTTP</span>
+              <strong>Controller</strong>
+              <small>recebe o DTO, valida e devolve a View</small>
+            </div>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <div class="flow-node">
+              <span class="tag">2 · Regras</span>
+              <strong>Service</strong>
+              <small>decide, orquestra e valida e-mail único</small>
+            </div>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <div class="flow-node">
+              <span class="tag">3 · Dados</span>
+              <strong>DbContext</strong>
+              <small>consulta e grava com EF Core</small>
+            </div>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <div class="flow-node db">
+              <span class="tag">4 · Storage</span>
+              <strong>SQLite</strong>
+              <small>tabela <code class="inline">Usuarios</code></small>
+            </div>
+          </div>
+          <p class="flow-note">
+            Na volta, o service entrega um <code class="inline">UsuarioResponseDTO</code>.
+            A entidade do banco nunca chega na View.
+          </p>
+
+          <h3>A regra de ouro</h3>
+          <div class="callout tip">
+            <span class="ico">✓</span>
+            <div class="body">
+              <strong>Controller não sabe SQL. Service não sabe HTTP. Entidade não sabe validação de formulário.</strong>
+              <p>Se você conseguir repetir essa frase, metade do caminho está feito.</p>
+            </div>
+          </div>
+
+          <h3>Quem faz o quê</h3>
+          <div class="table-wrap">
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Peça</th>
+                    <th>Responsabilidade</th>
+                    <th>Não pode</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Controller</td>
+                    <td>Receber a requisição, checar o <code class="inline">ModelState</code>, chamar o service e decidir a resposta (View, Redirect, NotFound).</td>
+                    <td>Regra de negócio, acesso a banco, hash de senha.</td>
+                  </tr>
+                  <tr>
+                    <td>Service</td>
+                    <td>Executar as regras do caso de uso: e-mail único, hash, orquestração do CRUD.</td>
+                    <td>Saber o que é <code class="inline">IActionResult</code>, View ou HTTP.</td>
+                  </tr>
+                  <tr>
+                    <td>DTO</td>
+                    <td>Definir o contrato de entrada e saída. Carregar só o que o caso de uso precisa.</td>
+                    <td>Regra de negócio ou acesso a banco.</td>
+                  </tr>
+                  <tr>
+                    <td>Entidade</td>
+                    <td>Representar a tabela do banco e o que o EF Core mapeia.</td>
+                    <td>Ser usada como modelo de formulário ou de resposta.</td>
+                  </tr>
+                  <tr>
+                    <td>DbContext</td>
+                    <td>Falar com o banco através do EF Core.</td>
+                    <td>Conter regra de negócio.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= 02 ESTRUTURA ================= -->
+        <section id="estrutura">
+          <div class="sec-head">
+            <span class="step">02</span>
+            <div>
+              <h2>Estrutura de pastas</h2>
+              <p>Uma pasta por responsabilidade. O nome já diz onde a coisa mora.</p>
+            </div>
+          </div>
+
+          <p>
+            No projeto, a entidade <code class="inline">Usuario.cs</code> fica em
+            <code class="inline">Models/</code> com o namespace <code class="inline">CompleteSystem.Models</code>.
+            A regra é simples: o namespace acompanha a pasta. Se a entidade estiver em
+            <code class="inline">Models/</code>, o namespace deve ser
+            <code class="inline">CompleteSystem.Models</code>, nunca <code class="inline">CompleteSystem.Data</code>.
+          </p>
+
+          <pre class="tree"><code>CompleteSystem/
+├── Controllers/
+│   └── UsuarioController.cs         <span class="c"># só HTTP</span>
+├── Models/
+│   ├── Usuario.cs                   <span class="c"># entidade = tabela</span>
+│   └── DTOs/
+│       ├── UsuarioCreateDTO.cs      <span class="c"># entrada do Create</span>
+│       ├── UsuarioUpdateDTO.cs      <span class="c"># entrada do Edit</span>
+│       ├── UsuarioResponseDTO.cs    <span class="c"># saída / resposta</span>
+│       └── UsuarioMapper.cs         <span class="c"># entidade ↔ DTO</span>
+├── Data/
+│   ├── AppDbContext.cs              <span class="c"># EF Core</span>
+│   └── Migrations/                  <span class="c"># histórico do banco</span>
+├── Services/
+│   ├── IUsuarioService.cs           <span class="c"># contrato</span>
+│   ├── UsuarioService.cs            <span class="c"># regras de negócio</span>
+│   └── RegraDeNegocioException.cs   <span class="c"># erro esperado</span>
+├── Views/
+│   └── Usuario/
+│       ├── Index.cshtml
+│       ├── Create.cshtml
+│       ├── Edit.cshtml
+│       ├── Details.cshtml
+│       └── Delete.cshtml
+├── Program.cs                       <span class="c"># injeção de dependência</span>
+└── appsettings.json                 <span class="c"># connection string</span></code></pre>
+
+          <div class="callout info">
+            <span class="ico">i</span>
+            <div class="body">
+              <strong>Ordem de leitura do fluxo</strong>
+              <p>
+                Entidade → DTOs → DbContext → interface do service → service → mapper → controller → views.
+                Cada peça depende apenas da peça anterior.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= 03 ENTIDADE ================= -->
+        <section id="entidade">
+          <div class="sec-head">
+            <span class="step">03</span>
+            <div>
+              <h2>A entidade: o espelho da tabela</h2>
+              <p>Simples de propósito. Ela só representa os dados que o banco guarda.</p>
+            </div>
+          </div>
+
+          <p>
+            A entidade é a classe que o Entity Framework mapeia para a tabela
+            <code class="inline">Usuarios</code>. Ela não valida formulário, não formata data e não
+            sabe nada de HTTP. Repare que o campo de senha se chama
+            <code class="inline">SenhaHash</code>: a senha pura nunca é persistida.
+          </p>
+
+          <figure class="code">
+            <figcaption>
+              <span class="file">Models/Usuario.cs</span>
+              <span class="lang">C#</span>
+            </figcaption>
+            <pre><code>namespace CompleteSystem.Models;
+
+public class Usuario
+{
+    public int Id { get; set; }
+    public string Nome { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string SenhaHash { get; set; } = string.Empty;
+    public bool Ativo { get; set; } = true;
+    public DateTime CriadoEm { get; set; } = DateTime.UtcNow;
+}</code></pre>
+          </figure>
+
+          <div class="callout danger">
+            <span class="ico">!</span>
+            <div class="body">
+              <strong>Nunca guarde a senha em texto puro</strong>
+              <p>
+                O service vai transformar a senha em hash antes de salvar. Se um dia o banco
+                vazar, ninguém consegue ler as senhas originais.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= 04 DTOs ================= -->
+        <section id="dtos">
+          <div class="sec-head">
+            <span class="step">04</span>
+            <div>
+              <h2>DTOs: o contrato de entrada e saída</h2>
+              <p>DTO é a forma dos dados que atravessam a fronteira da sua aplicação.</p>
+            </div>
+          </div>
+
+          <p>
+            <strong>DTO</strong> significa <em>Data Transfer Object</em>. Ele existe para transportar
+            dados entre o mundo de fora (formulário, JSON) e o mundo de dentro (service).
+            Separar entrada, atualização e resposta evita aceitar campos que o usuário não deveria mandar
+            — o famoso <em>mass assignment</em> / over-posting.
+          </p>
+
+          <div class="table-wrap">
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>DTO</th>
+                    <th>Onde é usado</th>
+                    <th>Campos</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>UsuarioCreateDTO</td>
+                    <td>Formulário de criação e action <code class="inline">Create</code></td>
+                    <td>Nome, Email, Senha</td>
+                  </tr>
+                  <tr>
+                    <td>UsuarioUpdateDTO</td>
+                    <td>Formulário de edição e action <code class="inline">Edit</code></td>
+                    <td>Id, Nome, Email, Ativo</td>
+                  </tr>
+                  <tr>
+                    <td>UsuarioResponseDTO</td>
+                    <td>Listagem, detalhes e retorno do service</td>
+                    <td>Id, Nome, Email, Ativo, CriadoEm</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <figure class="code">
+            <figcaption>
+              <span class="file">Models/DTOs/UsuarioCreateDTO.cs</span>
+              <span class="lang">C#</span>
+            </figcaption>
+            <pre><code>using System.ComponentModel.DataAnnotations;
+
+namespace CompleteSystem.Models.DTOs;
+
+public class UsuarioCreateDTO
+{
+    [Required(ErrorMessage = "O nome é obrigatório.")]
+    [StringLength(100, MinimumLength = 3,
+        ErrorMessage = "O nome deve ter entre 3 e 100 caracteres.")]
+    public string Nome { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "O e-mail é obrigatório.")]
+    [EmailAddress(ErrorMessage = "Informe um e-mail válido.")]
+    public string Email { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "A senha é obrigatória.")]
+    [StringLength(100, MinimumLength = 8,
+        ErrorMessage = "A senha deve ter no mínimo 8 caracteres.")]
+    [DataType(DataType.Password)]
+    public string Senha { get; set; } = string.Empty;
+}</code></pre>
+          </figure>
+
+          <figure class="code">
+            <figcaption>
+              <span class="file">Models/DTOs/UsuarioUpdateDTO.cs</span>
+              <span class="lang">C#</span>
+            </figcaption>
+            <pre><code>using System.ComponentModel.DataAnnotations;
+
+namespace CompleteSystem.Models.DTOs;
+
+public class UsuarioUpdateDTO
+{
+    public int Id { get; set; }
+
+    [Required(ErrorMessage = "O nome é obrigatório.")]
+    [StringLength(100, MinimumLength = 3)]
+    public string Nome { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "O e-mail é obrigatório.")]
+    [EmailAddress(ErrorMessage = "Informe um e-mail válido.")]
+    public string Email { get; set; } = string.Empty;
+
+    public bool Ativo { get; set; } = true;
+}</code></pre>
+          </figure>
+
+          <figure class="code">
+            <figcaption>
+              <span class="file">Models/DTOs/UsuarioResponseDTO.cs</span>
+              <span class="lang">C#</span>
+            </figcaption>
+            <pre><code>namespace CompleteSystem.Models.DTOs;
+
+public class UsuarioResponseDTO
+{
+    public int Id { get; set; }
+    public string Nome { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public bool Ativo { get; set; }
+    public DateTime CriadoEm { get; set; }
+}</code></pre>
+          </figure>
+
+          <h3>Por que não devolver a entidade?</h3>
+          <ul>
+            <li><strong>Segurança:</strong> a entidade tem <code class="inline">SenhaHash</code>; o DTO não.</li>
+            <li><strong>Contrato estável:</strong> mudar uma coluna do banco não quebra a tela automaticamente.</li>
+            <li><strong>Validação no lugar certo:</strong> <code class="inline">[Required]</code> e <code class="inline">[EmailAddress]</code> ficam no DTO, não na entidade.</li>
+            <li><strong>Sem over-posting:</strong> o formulário só consegue preencher os campos que o DTO declara.</li>
+          </ul>
+
+          <div class="callout warn">
+            <span class="ico">!</span>
+            <div class="body">
+              <strong>DTO é classe, não interface</strong>
+              <p>
+                DTO é uma classe de transporte: não existe “interface de DTO”. Interfaces seguem
+                outro papel e outra convenção de nome — <code class="inline">IUsuarioService</code>,
+                por exemplo. O prefixo <code class="inline">I</code> é para interfaces, não para DTOs.
+                Se aparecer um <code class="inline">UsuarioInterfaceDTO</code>, é sinal de nome e
+                responsabilidade confusos: renomeie ou remova.
+              </p>
+            </div>
+          </div>
+
+          <div class="callout tip">
+            <span class="ico">✓</span>
+            <div class="body">
+              <strong>Validação em dois níveis</strong>
+              <p>
+                DataAnnotations no DTO validam <em>formato</em> (campo vazio, e-mail inválido).
+                O service valida <em>regra de negócio</em> (e-mail já cadastrado, usuário inexistente).
+                Cada um no seu quadrado.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= 05 DBCONTEXT ================= -->
+        <section id="dbcontext">
+          <div class="sec-head">
+            <span class="step">05</span>
+            <div>
+              <h2>DbContext: a ponte com o banco</h2>
+              <p>Um lugar só para configurar o mapeamento e falar com o SQLite.</p>
+            </div>
+          </div>
+
+          <p>
+            O <code class="inline">AppDbContext</code> expõe a tabela <code class="inline">Usuarios</code> e
+            configura tamanho de campos, obrigatoriedade e o índice único de e-mail. Esse índice é a última
+            linha de defesa contra e-mails duplicados, mesmo se duas requisições chegarem ao mesmo tempo.
+          </p>
+
+          <figure class="code">
+            <figcaption>
+              <span class="file">Data/AppDbContext.cs</span>
+              <span class="lang">C#</span>
+            </figcaption>
+            <pre><code>using CompleteSystem.Models;
+using Microsoft.EntityFrameworkCore;
+
+namespace CompleteSystem.Data;
+
+public class AppDbContext : DbContext
+{
+    public AppDbContext(DbContextOptions&lt;AppDbContext&gt; options)
+        : base(options) { }
+
+    public DbSet&lt;Usuario&gt; Usuarios =&gt; Set&lt;Usuario&gt;();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity&lt;Usuario&gt;(entidade =&gt;
+        {
+            entidade.ToTable("Usuarios");
+            entidade.HasKey(u =&gt; u.Id);
+
+            entidade.Property(u =&gt; u.Nome)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entidade.HasIndex(u =&gt; u.Email).IsUnique();
+
+            entidade.Property(u =&gt; u.SenhaHash)
+                .HasMaxLength(255)
+                .IsRequired();
+        });
+    }
+}</code></pre>
+          </figure>
+
+          <div class="callout info">
+            <span class="ico">i</span>
+            <div class="body">
+              <strong>Um DbContext por requisição</strong>
+              <p>
+                O EF Core registra o <code class="inline">AppDbContext</code> com tempo de vida
+                <em>scoped</em>: uma instância por requisição HTTP. Não crie
+                <code class="inline">new AppDbContext()</code> na mão — peça no construtor.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= 06 INTERFACE ================= -->
+        <section id="interface">
+          <div class="sec-head">
+            <span class="step">06</span>
+            <div>
+              <h2>A interface do service</h2>
+              <p>O contrato que o controller conhece. A implementação fica escondida.</p>
+            </div>
+          </div>
+
+          <p>
+            A interface existe para o controller depender de uma <strong>abstração</strong>, e não da
+            classe concreta. Isso é a base da Inversão de Dependência (o <strong>D</strong> do SOLID) e o
+            que permite trocar a implementação por um mock em testes.
+          </p>
+
+          <figure class="code">
+            <figcaption>
+              <span class="file">Services/IUsuarioService.cs</span>
+              <span class="lang">C#</span>
+            </figcaption>
+            <pre><code>using CompleteSystem.Models.DTOs;
+
+namespace CompleteSystem.Services;
+
+public interface IUsuarioService
+{
+    Task&lt;IReadOnlyList&lt;UsuarioResponseDTO&gt;&gt; ListarAsync();
+    Task&lt;UsuarioResponseDTO?&gt; ObterPorIdAsync(int id);
+    Task&lt;UsuarioResponseDTO&gt; CriarAsync(UsuarioCreateDTO dto);
+    Task&lt;bool&gt; AtualizarAsync(UsuarioUpdateDTO dto);
+    Task&lt;bool&gt; RemoverAsync(int id);
+}</code></pre>
+          </figure>
+
+          <p>Três detalhes importantes do contrato:</p>
+          <ul>
+            <li>Todos os métodos são <strong>assíncronos</strong> (<code class="inline">Task</code>), porque o banco é I/O.</li>
+            <li>O retorno é <strong>DTO</strong>, nunca entidade e nunca <code class="inline">IActionResult</code>.</li>
+            <li>Consultas que podem não achar nada retornam <strong>nullable</strong> (<code class="inline">?</code>) ou <code class="inline">bool</code>. Quem decide o <code class="inline">NotFound</code> é o controller.</li>
+          </ul>
+        </section>
+
+        <!-- ================= 07 SERVICE ================= -->
+        <section id="service">
+          <div class="sec-head">
+            <span class="step">07</span>
+            <div>
+              <h2>O service: onde a regra de negócio mora</h2>
+              <p>Todo o CRUD em um lugar testável, sem uma linha de HTTP.</p>
+            </div>
+          </div>
+
+          <p>
+            O service recebe o <code class="inline">AppDbContext</code> e o
+            <code class="inline">IPasswordHasher&lt;Usuario&gt;</code> pelo construtor. Ele não sabe
+            que existe formulário, View ou <code class="inline">IActionResult</code>. Quando uma regra
+            é violada, ele lança uma exceção de negócio — e o controller traduz isso para o usuário.
+          </p>
+
+          <figure class="code">
+            <figcaption>
+              <span class="file">Services/RegraDeNegocioException.cs</span>
+              <span class="lang">C#</span>
+            </figcaption>
+            <pre><code>namespace CompleteSystem.Services;
+
+public class RegraDeNegocioException : Exception
+{
+    public RegraDeNegocioException(string mensagem)
+        : base(mensagem) { }
+}</code></pre>
+          </figure>
+
+          <figure class="code">
+            <figcaption>
+              <span class="file">Services/UsuarioService.cs</span>
+              <span class="lang">C#</span>
+            </figcaption>
+            <pre><code>using CompleteSystem.Data;
+using CompleteSystem.Models;
+using CompleteSystem.Models.DTOs;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+
+namespace CompleteSystem.Services;
+
+public class UsuarioService : IUsuarioService
+{
+    private readonly AppDbContext _context;
+    private readonly IPasswordHasher&lt;Usuario&gt; _passwordHasher;
+
+    public UsuarioService(
+        AppDbContext context,
+        IPasswordHasher&lt;Usuario&gt; passwordHasher)
+    {
+        _context = context;
+        _passwordHasher = passwordHasher;
+    }
+
+    public async Task&lt;IReadOnlyList&lt;UsuarioResponseDTO&gt;&gt; ListarAsync()
+    {
+        var usuarios = await _context.Usuarios
+            .AsNoTracking()
+            .OrderBy(u =&gt; u.Nome)
+            .ToListAsync();
+
+        return usuarios.Select(u =&gt; u.ToResponseDTO()).ToList();
+    }
+
+    public async Task&lt;UsuarioResponseDTO?&gt; ObterPorIdAsync(int id)
+    {
+        var usuario = await _context.Usuarios
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u =&gt; u.Id == id);
+
+        return usuario?.ToResponseDTO();
+    }
+
+    public async Task&lt;UsuarioResponseDTO&gt; CriarAsync(UsuarioCreateDTO dto)
+    {
+        var email = dto.Email.Trim().ToLowerInvariant();
+
+        var emailEmUso = await _context.Usuarios
+            .AnyAsync(u =&gt; u.Email == email);
+
+        if (emailEmUso)
+            throw new RegraDeNegocioException(
+                "Já existe um usuário com este e-mail.");
+
+        var usuario = new Usuario
+        {
+            Nome = dto.Nome.Trim(),
+            Email = email,
+            Ativo = true,
+            CriadoEm = DateTime.UtcNow
+        };
+
+        usuario.SenhaHash = _passwordHasher.HashPassword(usuario, dto.Senha);
+
+        _context.Usuarios.Add(usuario);
+        await _context.SaveChangesAsync();
+
+        return usuario.ToResponseDTO();
+    }
+
+    public async Task&lt;bool&gt; AtualizarAsync(UsuarioUpdateDTO dto)
+    {
+        var usuario = await _context.Usuarios
+            .FirstOrDefaultAsync(u =&gt; u.Id == dto.Id);
+
+        if (usuario is null)
+            return false;
+
+        var email = dto.Email.Trim().ToLowerInvariant();
+
+        var emailEmUso = await _context.Usuarios
+            .AnyAsync(u =&gt; u.Email == email &amp;&amp; u.Id != dto.Id);
+
+        if (emailEmUso)
+            throw new RegraDeNegocioException(
+                "Já existe outro usuário com este e-mail.");
+
+        usuario.Nome = dto.Nome.Trim();
+        usuario.Email = email;
+        usuario.Ativo = dto.Ativo;
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task&lt;bool&gt; RemoverAsync(int id)
+    {
+        var usuario = await _context.Usuarios
+            .FirstOrDefaultAsync(u =&gt; u.Id == id);
+
+        if (usuario is null)
+            return false;
+
+        _context.Usuarios.Remove(usuario);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+}</code></pre>
+          </figure>
+
+          <h3>O que cada método faz</h3>
+          <ul>
+            <li><strong>ListarAsync:</strong> busca todos, ordena por nome e mapeia para DTO. O <code class="inline">AsNoTracking()</code> avisa ao EF que ninguém vai alterar esses objetos — é mais leve para leitura.</li>
+            <li><strong>ObterPorIdAsync:</strong> retorna <code class="inline">null</code> quando não encontra. Quem transforma isso em <code class="inline">NotFound()</code> é o controller.</li>
+            <li><strong>CriarAsync:</strong> verifica e-mail duplicado, normaliza nome/e-mail, gera o hash, salva e devolve o DTO de resposta.</li>
+            <li><strong>AtualizarAsync:</strong> procura o usuário, verifica e-mail duplicado <em>ignorando o próprio id</em>, atualiza e devolve <code class="inline">true</code>/<code class="inline">false</code>.</li>
+            <li><strong>RemoverAsync:</strong> procura, remove e devolve <code class="inline">true</code>/<code class="inline">false</code>.</li>
+          </ul>
+
+          <div class="callout tip">
+            <span class="ico">✓</span>
+            <div class="body">
+              <strong>Teste de SRP: descreva a classe em uma frase</strong>
+              <p>
+                “UsuarioService executa as regras de negócio do CRUD de usuários.” Uma frase, um motivo
+                para mudar. Se você precisar de “e” (“valida e envia e-mail e gera relatório”), já são
+                responsabilidades demais.
+              </p>
+            </div>
+          </div>
+
+          <div class="callout info">
+            <span class="ico">i</span>
+            <div class="body">
+              <strong>Sem HTTP aqui dentro</strong>
+              <p>
+                Repare que não existe <code class="inline">IActionResult</code>, <code class="inline">ViewBag</code>
+                nem <code class="inline">TempData</code>. Isso permite chamar o mesmo service de um controller
+                MVC, de uma API ou de um teste unitário sem mudar nada.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= 08 MAPPER ================= -->
+        <section id="mapper">
+          <div class="sec-head">
+            <span class="step">08</span>
+            <div>
+              <h2>Mapper: entidade ↔ DTO sem repetição</h2>
+              <p>Métodos de extensão pequenos, explícitos e fáceis de achar.</p>
+            </div>
+          </div>
+
+          <p>
+            O mapeamento é manual de propósito: para um CRUD pequeno, um método de extensão é mais
+            simples de entender do que uma biblioteca inteira. Se um dia os mapeamentos crescerem muito,
+            aí sim vale avaliar o AutoMapper.
+          </p>
+
+          <figure class="code">
+            <figcaption>
+              <span class="file">Models/DTOs/UsuarioMapper.cs</span>
+              <span class="lang">C#</span>
+            </figcaption>
+            <pre><code>using CompleteSystem.Models;
+
+namespace CompleteSystem.Models.DTOs;
+
+public static class UsuarioMapper
+{
+    public static UsuarioResponseDTO ToResponseDTO(this Usuario usuario) =&gt; new()
+    {
+        Id = usuario.Id,
+        Nome = usuario.Nome,
+        Email = usuario.Email,
+        Ativo = usuario.Ativo,
+        CriadoEm = usuario.CriadoEm
+    };
+
+    public static UsuarioUpdateDTO ToUpdateDTO(
+        this UsuarioResponseDTO usuario) =&gt; new()
+    {
+        Id = usuario.Id,
+        Nome = usuario.Nome,
+        Email = usuario.Email,
+        Ativo = usuario.Ativo
+    };
+}</code></pre>
+          </figure>
+
+          <p>
+            Com isso, o service chama <code class="inline">usuario.ToResponseDTO()</code> e o controller
+            chama <code class="inline">usuario.ToUpdateDTO()</code> no <code class="inline">Edit</code>.
+            Se um campo novo aparecer na entidade, você altera o mapper em um lugar só.
+          </p>
+
+          <div class="callout warn">
+            <span class="ico">!</span>
+            <div class="body">
+              <strong>Não mapeie senha</strong>
+              <p>
+                O mapper de resposta não copia <code class="inline">SenhaHash</code>. É exatamente esse
+                detalhe que impede o hash de vazar na listagem ou no JSON de uma futura API.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= 09 CONTROLLER ================= -->
+        <section id="controller">
+          <div class="sec-head">
+            <span class="step">09</span>
+            <div>
+              <h2>Controller magro: só coordena</h2>
+              <p>Recebe, valida o ModelState, chama o service e escolhe a resposta.</p>
+            </div>
+          </div>
+
+          <p>
+            O controller não tem <code class="inline">AppDbContext</code>, não faz hash, não verifica
+            e-mail duplicado. Ele apenas conecta o mundo HTTP ao service. Note que as exceções de negócio
+            são traduzidas para <code class="inline">ModelState</code>, que é o lugar onde o usuário vê o erro.
+          </p>
+
+          <figure class="code">
+            <figcaption>
+              <span class="file">Controllers/UsuarioController.cs</span>
+              <span class="lang">C#</span>
+            </figcaption>
+            <pre><code>using CompleteSystem.Models.DTOs;
+using CompleteSystem.Services;
+using Microsoft.AspNetCore.Mvc;
+
+namespace CompleteSystem.Controllers;
+
+public class UsuarioController : Controller
+{
+    private readonly IUsuarioService _usuarioService;
+
+    public UsuarioController(IUsuarioService usuarioService)
+    {
+        _usuarioService = usuarioService;
+    }
+
+    public async Task&lt;IActionResult&gt; Index()
+    {
+        var usuarios = await _usuarioService.ListarAsync();
+        return View(usuarios);
+    }
+
+    public async Task&lt;IActionResult&gt; Details(int id)
+    {
+        var usuario = await _usuarioService.ObterPorIdAsync(id);
+        if (usuario is null)
+            return NotFound();
+
+        return View(usuario);
+    }
+
+    public IActionResult Create() =&gt; View();
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task&lt;IActionResult&gt; Create(UsuarioCreateDTO dto)
+    {
+        if (!ModelState.IsValid)
+            return View(dto);
+
+        try
+        {
+            await _usuarioService.CriarAsync(dto);
+            TempData["Sucesso"] = "Usuário cadastrado com sucesso!";
+            return RedirectToAction(nameof(Index));
+        }
+        catch (RegraDeNegocioException ex)
+        {
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return View(dto);
+        }
+    }
+
+    public async Task&lt;IActionResult&gt; Edit(int id)
+    {
+        var usuario = await _usuarioService.ObterPorIdAsync(id);
+        if (usuario is null)
+            return NotFound();
+
+        return View(usuario.ToUpdateDTO());
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task&lt;IActionResult&gt; Edit(int id, UsuarioUpdateDTO dto)
+    {
+        if (id != dto.Id)
+            return BadRequest();
+
+        if (!ModelState.IsValid)
+            return View(dto);
+
+        try
+        {
+            var atualizado = await _usuarioService.AtualizarAsync(dto);
+            if (!atualizado)
+                return NotFound();
+
+            TempData["Sucesso"] = "Usuário atualizado com sucesso!";
+            return RedirectToAction(nameof(Index));
+        }
+        catch (RegraDeNegocioException ex)
+        {
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return View(dto);
+        }
+    }
+
+    public async Task&lt;IActionResult&gt; Delete(int id)
+    {
+        var usuario = await _usuarioService.ObterPorIdAsync(id);
+        if (usuario is null)
+            return NotFound();
+
+        return View(usuario);
+    }
+
+    [HttpPost, ActionName("Delete")]
+    [ValidateAntiForgeryToken]
+    public async Task&lt;IActionResult&gt; DeleteConfirmed(int id)
+    {
+        var removido = await _usuarioService.RemoverAsync(id);
+        if (!removido)
+            return NotFound();
+
+        TempData["Sucesso"] = "Usuário removido.";
+        return RedirectToAction(nameof(Index));
+    }
+}</code></pre>
+          </figure>
+
+          <h3>Antes e depois</h3>
+          <div class="compare">
+            <div class="panel bad">
+              <div class="panel-head">✕ Controller gordo</div>
+              <pre><code>[HttpPost]
+public async Task&lt;IActionResult&gt; Create(Usuario u)
+{
+    if (await _db.Usuarios
+        .AnyAsync(x =&gt; x.Email == u.Email))
+        return BadRequest();
+
+    u.Senha = BCrypt.HashPassword(u.Senha);
+    _db.Usuarios.Add(u);
+    await _db.SaveChangesAsync();
+
+    return RedirectToAction("Index");
+}</code></pre>
+            </div>
+            <div class="panel good">
+              <div class="panel-head">✓ Controller magro</div>
+              <pre><code>[HttpPost]
+public async Task&lt;IActionResult&gt; Create(
+    UsuarioCreateDTO dto)
+{
+    if (!ModelState.IsValid)
+        return View(dto);
+
+    await _usuarioService.CriarAsync(dto);
+
+    return RedirectToAction(nameof(Index));
+}</code></pre>
+            </div>
+          </div>
+          <p class="compare-note">
+            O controller da direita não sabe como o usuário é salvo. Ele só sabe <em>quem</em> chamar.
+            A validação de e-mail e o hash ficaram no service.
+          </p>
+
+          <div class="callout tip">
+            <span class="ico">✓</span>
+            <div class="body">
+              <strong>Checklist do controller magro</strong>
+              <p>
+                Nenhum <code class="inline">_context</code>, nenhum <code class="inline">HashPassword</code>,
+                nenhum <code class="inline">if</code> de regra de negócio. Só ModelState, chamada ao service,
+                escolha de resposta e mensagens para o usuário.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= 10 VIEWS ================= -->
+        <section id="views">
+          <div class="sec-head">
+            <span class="step">10</span>
+            <div>
+              <h2>Views: consumindo DTOs</h2>
+              <p>As telas recebem DTO de resposta e enviam DTO de entrada.</p>
+            </div>
+          </div>
+
+          <p>
+            Antes de tudo, garanta que o namespace dos DTOs está disponível nas Views. O arquivo
+            <code class="inline">Views/_ViewImports.cshtml</code> é o lugar certo para isso:
+          </p>
+
+          <figure class="code">
+            <figcaption>
+              <span class="file">Views/_ViewImports.cshtml</span>
+              <span class="lang">Razor</span>
+            </figcaption>
+            <pre><code>@using CompleteSystem
+@using CompleteSystem.Models
+@using CompleteSystem.Models.DTOs
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers</code></pre>
+          </figure>
+
+          <h3>Listagem</h3>
+          <figure class="code">
+            <figcaption>
+              <span class="file">Views/Usuario/Index.cshtml</span>
+              <span class="lang">Razor</span>
+            </figcaption>
+            <pre><code>@model IReadOnlyList&lt;UsuarioResponseDTO&gt;
+
+&lt;h1&gt;Usuários&lt;/h1&gt;
+
+@if (TempData["Sucesso"] is string mensagem)
+{
+    &lt;div class="alert alert-success"&gt;@mensagem&lt;/div&gt;
+}
+
+&lt;p&gt;
+    &lt;a asp-action="Create" class="btn btn-primary"&gt;Novo usuário&lt;/a&gt;
+&lt;/p&gt;
+
+&lt;table class="table"&gt;
+    &lt;thead&gt;
+        &lt;tr&gt;
+            &lt;th&gt;Nome&lt;/th&gt;
+            &lt;th&gt;E-mail&lt;/th&gt;
+            &lt;th&gt;Ativo&lt;/th&gt;
+            &lt;th&gt;Criado em&lt;/th&gt;
+            &lt;th&gt;&lt;/th&gt;
+        &lt;/tr&gt;
+    &lt;/thead&gt;
+    &lt;tbody&gt;
+    @foreach (var usuario in Model)
+    {
+        &lt;tr&gt;
+            &lt;td&gt;@usuario.Nome&lt;/td&gt;
+            &lt;td&gt;@usuario.Email&lt;/td&gt;
+            &lt;td&gt;@(usuario.Ativo ? "Sim" : "Não")&lt;/td&gt;
+            &lt;td&gt;@usuario.CriadoEm.ToLocalTime().ToString("dd/MM/yyyy")&lt;/td&gt;
+            &lt;td&gt;
+                &lt;a asp-action="Edit" asp-route-id="@usuario.Id"&gt;Editar&lt;/a&gt; |
+                &lt;a asp-action="Details" asp-route-id="@usuario.Id"&gt;Detalhes&lt;/a&gt; |
+                &lt;a asp-action="Delete" asp-route-id="@usuario.Id"&gt;Excluir&lt;/a&gt;
+            &lt;/td&gt;
+        &lt;/tr&gt;
+    }
+    &lt;/tbody&gt;
+&lt;/table&gt;</code></pre>
+          </figure>
+
+          <h3>Criação</h3>
+          <figure class="code">
+            <figcaption>
+              <span class="file">Views/Usuario/Create.cshtml</span>
+              <span class="lang">Razor</span>
+            </figcaption>
+            <pre><code>@model UsuarioCreateDTO
+
+&lt;h1&gt;Novo usuário&lt;/h1&gt;
+
+&lt;form asp-action="Create" method="post"&gt;
+    &lt;div asp-validation-summary="ModelOnly" class="text-danger"&gt;&lt;/div&gt;
+
+    &lt;div class="mb-3"&gt;
+        &lt;label asp-for="Nome" class="form-label"&gt;&lt;/label&gt;
+        &lt;input asp-for="Nome" class="form-control" /&gt;
+        &lt;span asp-validation-for="Nome" class="text-danger"&gt;&lt;/span&gt;
+    &lt;/div&gt;
+
+    &lt;div class="mb-3"&gt;
+        &lt;label asp-for="Email" class="form-label"&gt;&lt;/label&gt;
+        &lt;input asp-for="Email" class="form-control" /&gt;
+        &lt;span asp-validation-for="Email" class="text-danger"&gt;&lt;/span&gt;
+    &lt;/div&gt;
+
+    &lt;div class="mb-3"&gt;
+        &lt;label asp-for="Senha" class="form-label"&gt;&lt;/label&gt;
+        &lt;input asp-for="Senha" class="form-control" /&gt;
+        &lt;span asp-validation-for="Senha" class="text-danger"&gt;&lt;/span&gt;
+    &lt;/div&gt;
+
+    &lt;button type="submit" class="btn btn-primary"&gt;Salvar&lt;/button&gt;
+    &lt;a asp-action="Index" class="btn btn-secondary"&gt;Cancelar&lt;/a&gt;
+&lt;/form&gt;
+
+@section Scripts {
+    &lt;partial name="_ValidationScriptsPartial" /&gt;
+}</code></pre>
+          </figure>
+
+          <h3>Edição</h3>
+          <p>
+            A view de edição é quase igual à de criação. As diferenças são o <code class="inline">hidden</code>
+            com o Id e o checkbox de ativo:
+          </p>
+          <figure class="code">
+            <figcaption>
+              <span class="file">Views/Usuario/Edit.cshtml (trecho)</span>
+              <span class="lang">Razor</span>
+            </figcaption>
+            <pre><code>@model UsuarioUpdateDTO
+
+&lt;form asp-action="Edit" asp-route-id="@Model.Id" method="post"&gt;
+    &lt;input type="hidden" asp-for="Id" /&gt;
+    &lt;div asp-validation-summary="ModelOnly" class="text-danger"&gt;&lt;/div&gt;
+
+    &lt;!-- Nome e Email: mesmos campos da tela de criação --&gt;
+
+    &lt;div class="form-check mb-3"&gt;
+        &lt;input asp-for="Ativo" class="form-check-input" /&gt;
+        &lt;label asp-for="Ativo" class="form-check-label"&gt;&lt;/label&gt;
+    &lt;/div&gt;
+
+    &lt;button type="submit" class="btn btn-primary"&gt;Salvar&lt;/button&gt;
+    &lt;a asp-action="Index" class="btn btn-secondary"&gt;Cancelar&lt;/a&gt;
+&lt;/form&gt;
+
+@section Scripts {
+    &lt;partial name="_ValidationScriptsPartial" /&gt;
+}</code></pre>
+          </figure>
+
+          <p>
+            <strong>Details</strong> e <strong>Delete</strong> seguem o mesmo padrão: recebem
+            <code class="inline">UsuarioResponseDTO</code> e exibem os campos. O <code class="inline">Delete</code>
+            tem uma tela de confirmação (GET) e um POST separado com
+            <code class="inline">[ActionName("Delete")]</code>, exatamente como no controller.
+          </p>
+
+          <div class="callout info">
+            <span class="ico">i</span>
+            <div class="body">
+              <strong>Tag Helpers fazem o trabalho chato</strong>
+              <p>
+                <code class="inline">asp-for</code> gera o <code class="inline">name</code>, o
+                <code class="inline">id</code> e o <code class="inline">value</code>; o
+                <code class="inline">asp-validation-for</code> mostra a mensagem do DataAnnotations.
+                O <code class="inline">form</code> com Tag Helper já inclui o token antiforgery —
+                por isso o <code class="inline">[ValidateAntiForgeryToken]</code> no controller funciona.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= 11 DI ================= -->
+        <section id="di">
+          <div class="sec-head">
+            <span class="step">11</span>
+            <div>
+              <h2>Injeção de dependência: ligando as peças</h2>
+              <p>O controller pede uma interface. O ASP.NET entrega a implementação.</p>
+            </div>
+          </div>
+
+          <p>
+            No <code class="inline">Program.cs</code> você registra o <code class="inline">DbContext</code>,
+            o service e o hasher de senha. A partir daí, o ASP.NET resolve o grafo de dependências
+            automaticamente em cada requisição.
+          </p>
+
+          <figure class="code">
+            <figcaption>
+              <span class="file">Program.cs</span>
+              <span class="lang">C#</span>
+            </figcaption>
+            <pre><code>using CompleteSystem.Data;
+using CompleteSystem.Models;
+using CompleteSystem.Services;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddControllersWithViews();
+
+builder.Services.AddDbContext&lt;AppDbContext&gt;(options =&gt;
+    options.UseSqlite(
+        builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped&lt;IUsuarioService, UsuarioService&gt;();
+builder.Services.AddScoped&lt;IPasswordHasher&lt;Usuario&gt;, PasswordHasher&lt;Usuario&gt;&gt;();
+
+var app = builder.Build();
+
+// Garante que o app.db exista e esteja com as migrations aplicadas.
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService&lt;AppDbContext&gt;();
+    db.Database.Migrate();
+}
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Home/Error");
+    app.UseHsts();
+}
+
+app.UseHttpsRedirection();
+app.UseRouting();
+app.UseAuthorization();
+app.MapStaticAssets();
+
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Home}/{action=Index}/{id?}")
+    .WithStaticAssets();
+
+app.Run();</code></pre>
+          </figure>
+
+          <figure class="code">
+            <figcaption>
+              <span class="file">appsettings.json</span>
+              <span class="lang">JSON</span>
+            </figcaption>
+            <pre><code>{
+  "ConnectionStrings": {
+    "DefaultConnection": "Data Source=app.db"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*"
+}</code></pre>
+          </figure>
+
+          <h3>Criar o banco</h3>
+          <p>
+            Com o DbContext configurado, gere a migration inicial. Se o comando
+            <code class="inline">dotnet ef</code> não existir, instale a ferramenta uma vez.
+            O <code class="inline">Database.Migrate()</code> no <code class="inline">Program.cs</code>
+            aplica as migrations automaticamente quando a aplicação inicia — por isso o
+            <code class="inline">app.db</code> é criado na primeira execução.
+          </p>
+
+          <figure class="code">
+            <figcaption>
+              <span class="file">Terminal</span>
+              <span class="lang">Shell</span>
+            </figcaption>
+            <pre><code># só na primeira vez, se o comando não existir
+dotnet tool install --global dotnet-ef
+
+dotnet ef migrations add InitialCreate
+
+# opcional: aplicar sem iniciar a aplicação
+dotnet ef database update</code></pre>
+          </figure>
+
+          <div class="callout info">
+            <span class="ico">i</span>
+            <div class="body">
+              <strong>Tempos de vida (lifetimes)</strong>
+              <p>
+                <strong>Scoped</strong> (uma instância por requisição): DbContext e services que usam o banco.
+                <strong>Transient</strong> (uma instância por resolução): classes leves e sem estado.
+                <strong>Singleton</strong> (uma para a aplicação inteira): configurações e caches.
+                Na dúvida, use <code class="inline">Scoped</code> para o CRUD.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= 12 SOLID ================= -->
+        <section id="solid">
+          <div class="sec-head">
+            <span class="step">12</span>
+            <div>
+              <h2>SOLID na prática (sem decoreba)</h2>
+              <p>Onde cada princípio aparece no seu CRUD de usuários.</p>
+            </div>
+          </div>
+
+          <div class="solid-grid">
+            <article class="solid-card">
+              <span class="letter">S</span>
+              <h4>Responsabilidade Única</h4>
+              <p>Cada classe tem um motivo para mudar. Controller muda quando a rota muda; service, quando a regra muda; DTO, quando o contrato muda.</p>
+              <span class="where">Controller · Service · DTO</span>
+            </article>
+
+            <article class="solid-card">
+              <span class="letter">O</span>
+              <h4>Aberto/Fechado</h4>
+              <p>Você adiciona comportamento criando novas classes (ex.: um <code class="inline">IEmailService</code>), em vez de encher o service de <code class="inline">if</code>.</p>
+              <span class="where">IUsuarioService</span>
+            </article>
+
+            <article class="solid-card">
+              <span class="letter">L</span>
+              <h4>Substituição de Liskov</h4>
+              <p>Qualquer implementação de <code class="inline">IUsuarioService</code> pode entrar no lugar da atual sem quebrar o controller.</p>
+              <span class="where">IUsuarioService</span>
+            </article>
+
+            <article class="solid-card">
+              <span class="letter">I</span>
+              <h4>Segregação de Interfaces</h4>
+              <p>Interfaces pequenas e focadas. Se a interface virar um monstro com 20 métodos, quebre por caso de uso.</p>
+              <span class="where">Services/</span>
+            </article>
+
+            <article class="solid-card">
+              <span class="letter">D</span>
+              <h4>Inversão de Dependência</h4>
+              <p>O controller depende da abstração, não da classe concreta. O service recebe o DbContext pronto pelo DI.</p>
+              <span class="where">Program.cs</span>
+            </article>
+          </div>
+
+          <div class="callout tip">
+            <span class="ico">✓</span>
+            <div class="body">
+              <strong>SRP na prática: o teste da frase única</strong>
+              <p>
+                Descreva a classe sem usar “e”. “UsuarioService executa as regras do CRUD de usuários.”
+                Perfeito. “UsuarioController recebe a requisição, valida o formulário, acessa o banco,
+                faz o hash e devolve a View.” Reprovado: são responsabilidades demais no mesmo lugar.
+              </p>
+            </div>
+          </div>
+
+          <div class="callout warn">
+            <span class="ico">!</span>
+            <div class="body">
+              <strong>SOLID não é sobre ter 50 interfaces</strong>
+              <p>
+                É sobre depender de abstrações e manter cada coisa no seu lugar. Para este CRUD,
+                três DTOs, uma interface e um service já entregam muito valor. Não crie camadas
+                que você não consegue justificar.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= 13 ERROS ================= -->
+        <section id="erros">
+          <div class="sec-head">
+            <span class="step">13</span>
+            <div>
+              <h2>Erros comuns (e como evitar)</h2>
+              <p>Se algum destes aparecer no seu código, a fronteira vazou.</p>
+            </div>
+          </div>
+
+          <div class="mistakes">
+            <article class="mistake">
+              <strong>Controller com <code class="inline">_context</code></strong>
+              <p>Se o controller conhece EF Core, a regra de negócio vazou para a camada HTTP.</p>
+            </article>
+
+            <article class="mistake">
+              <strong>Service devolvendo <code class="inline">IActionResult</code></strong>
+              <p>Isso amarra a regra de negócio ao ASP.NET e impede reaproveitar em uma API ou teste.</p>
+            </article>
+
+            <article class="mistake">
+              <strong>Entidade na View ou no JSON</strong>
+              <p>Além de acoplar a tela ao banco, <code class="inline">SenhaHash</code> pode vazar sem querer.</p>
+            </article>
+
+            <article class="mistake">
+              <strong><code class="inline">new UsuarioService()</code> no controller</strong>
+              <p>Quebra a injeção de dependência, dificulta testes e ignora o ciclo de vida do DbContext.</p>
+            </article>
+
+            <article class="mistake">
+              <strong>Regra de negócio na View</strong>
+              <p>View é apresentação. Validação de e-mail único e hash de senha não pertencem ao Razor.</p>
+            </article>
+
+            <article class="mistake">
+              <strong>Senha em texto puro</strong>
+              <p>Sempre gere hash com <code class="inline">IPasswordHasher</code> (ou BCrypt) antes de salvar.</p>
+            </article>
+
+            <article class="mistake">
+              <strong>Métodos síncronos no banco</strong>
+              <p>Use <code class="inline">async</code>/<code class="inline">await</code> e os métodos <code class="inline">*Async</code> do EF Core.</p>
+            </article>
+
+            <article class="mistake">
+              <strong>Esquecer o antiforgery</strong>
+              <p>Todo POST de formulário precisa de <code class="inline">[ValidateAntiForgeryToken]</code> e do Tag Helper no form.</p>
+            </article>
+          </div>
+
+          <h3>Checklist final</h3>
+          <ul class="checklist">
+            <li>O controller não referencia <code class="inline">AppDbContext</code>.</li>
+            <li>O service não referencia <code class="inline">Microsoft.AspNetCore.Mvc</code>.</li>
+            <li>Nenhuma action retorna entidade; só DTO de resposta.</li>
+            <li>O DTO de criação não tem <code class="inline">Id</code> nem <code class="inline">Ativo</code>.</li>
+            <li>O DTO de resposta não tem <code class="inline">SenhaHash</code>.</li>
+            <li>E-mail duplicado é validado no service e no banco (índice único).</li>
+            <li>As dependências são resolvidas por DI, não por <code class="inline">new</code>.</li>
+            <li>Todos os acessos ao banco são assíncronos.</li>
+          </ul>
+        </section>
+
+        <!-- ================= 14 PRÓXIMOS PASSOS ================= -->
+        <section id="proximos">
+          <div class="sec-head">
+            <span class="step">14</span>
+            <div>
+              <h2>Próximos passos</h2>
+              <p>O CRUD está pronto. Agora evolua sem quebrar a organização.</p>
+            </div>
+          </div>
+
+          <ol class="roadmap">
+            <li>
+              <strong>Testes unitários do service</strong>
+              <span>Use SQLite in-memory ou um banco de teste para validar e-mail duplicado, criação e remoção. O controller pode ser testado com um mock de <code class="inline">IUsuarioService</code>.</span>
+            </li>
+            <li>
+              <strong>Repository pattern</strong>
+              <span>Se o service crescer ou você precisar trocar a fonte de dados, crie <code class="inline">IUsuarioRepository</code> e mova as consultas do EF para lá. Não faça isso só por fazer.</span>
+            </li>
+            <li>
+              <strong>Result pattern</strong>
+              <span>Em vez de exceções para fluxos esperados, retorne um objeto com sucesso/erro. Deixa o fluxo explícito e dispensa <code class="inline">try/catch</code> no controller.</span>
+            </li>
+            <li>
+              <strong>FluentValidation</strong>
+              <span>Quando as regras de validação passarem de DataAnnotations, centralize-as em validadores por DTO.</span>
+            </li>
+            <li>
+              <strong>API com os mesmos DTOs e service</strong>
+              <span>Crie um <code class="inline">UsuarioApiController</code> retornando os DTOs. A regra continua no service, sem duplicação.</span>
+            </li>
+            <li>
+              <strong>Paginação, busca e ordenação</strong>
+              <span>Evolua o <code class="inline">ListarAsync</code> para receber filtros e devolver uma página, em vez de carregar a tabela inteira.</span>
+            </li>
+          </ol>
+
+          <h3>Se quiser refazer do zero, siga esta ordem</h3>
+          <ol>
+            <li>Entidade <code class="inline">Usuario</code> + <code class="inline">AppDbContext</code> + migration.</li>
+            <li>DTOs de criação, atualização e resposta + mapper.</li>
+            <li>Interface <code class="inline">IUsuarioService</code> e implementação <code class="inline">UsuarioService</code>.</li>
+            <li>Registro no <code class="inline">Program.cs</code> (DI + connection string).</li>
+            <li>Controller magro com as cinco actions.</li>
+            <li>Views de Index, Create, Edit, Details e Delete.</li>
+            <li>Teste o fluxo completo: criar, listar, editar, detalhar e excluir.</li>
+          </ol>
+
+          <div class="callout tip">
+            <span class="ico">✓</span>
+            <div class="body">
+              <strong>Você terminou o guia</strong>
+              <p>
+                Se o seu controller hoje tem 20 linhas e o service tem as regras, você aplicou SRP,
+                separou responsabilidades e criou uma base que aguenta crescer. O próximo passo é
+                escrever o primeiro teste do <code class="inline">UsuarioService</code>.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <footer class="page-footer">
+          <span>Guia de estudo para o projeto <strong>CompleteSystem</strong> · ASP.NET Core MVC + EF Core</span>
+          <a href="#top">Voltar ao topo ↑</a>
+        </footer>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

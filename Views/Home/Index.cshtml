@@ -1,0 +1,54 @@
+﻿@{
+    ViewData["Title"] = "Início";
+}
+
+<div class="text-center mb-4">
+    <h1 class="display-5">Sistema de usuários, produtos e compras</h1>
+    <p class="lead">Cada perfil de acesso enxerga apenas as operações que pode executar.</p>
+</div>
+
+@if (User.Identity?.IsAuthenticated != true)
+{
+    <div class="text-center">
+        <a asp-controller="Account" asp-action="Login" class="btn btn-primary btn-lg">Entrar no sistema</a>
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Admin</h5>
+                    <p class="card-text">
+                        Cria usuários e administradores, altera perfis e gerencia os logs de acesso e requisições.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Manager</h5>
+                    <p class="card-text">Cria, edita e remove categorias de produtos e regras de desconto.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Owner</h5>
+                    <p class="card-text">Cadastra produtos de acordo com as categorias disponíveis.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Client</h5>
+                    <p class="card-text">Consulta os produtos e realiza compras.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+}

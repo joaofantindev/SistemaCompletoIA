@@ -1,0 +1,46 @@
+@model IReadOnlyList<RegraCategoriaRespostaDTO>
+
+@{
+    ViewData["Title"] = "Regras de categoria";
+}
+
+<h1>Regras de categoria</h1>
+
+@if (TempData["Sucesso"] is string mensagemSucesso)
+{
+    <div class="alert alert-success">@mensagemSucesso</div>
+}
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Nova regra</a>
+</p>
+
+<table class="table table-striped align-middle">
+    <thead>
+        <tr>
+            <th>Categoria</th>
+            <th>Descrição</th>
+            <th>Desconto</th>
+            <th>Ativa</th>
+            <th>Criada em</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var regra in Model)
+    {
+        <tr>
+            <td>@regra.NomeCategoria</td>
+            <td>@regra.Descricao</td>
+            <td>@regra.PercentualDesconto.ToString("N2")%</td>
+            <td>@(regra.Ativa ? "Sim" : "Não")</td>
+            <td>@regra.CriadaEm.ToLocalTime().ToString("dd/MM/yyyy")</td>
+            <td class="text-nowrap">
+                <a asp-action="Details" asp-route-identificador="@regra.Id">Detalhes</a> |
+                <a asp-action="Edit" asp-route-identificador="@regra.Id">Editar</a> |
+                <a asp-action="Delete" asp-route-identificador="@regra.Id">Excluir</a>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>

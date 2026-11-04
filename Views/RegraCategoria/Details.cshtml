@@ -1,0 +1,27 @@
+@model RegraCategoriaRespostaDTO
+
+@{
+    ViewData["Title"] = "Detalhes da regra";
+}
+
+<h1>Detalhes da regra</h1>
+
+<dl class="row">
+    <dt class="col-sm-2">Categoria</dt>
+    <dd class="col-sm-10">@Model.NomeCategoria</dd>
+
+    <dt class="col-sm-2">Descrição</dt>
+    <dd class="col-sm-10">@Model.Descricao</dd>
+
+    <dt class="col-sm-2">Desconto</dt>
+    <dd class="col-sm-10">@Model.PercentualDesconto.ToString("N2")%</dd>
+
+    <dt class="col-sm-2">Ativa</dt>
+    <dd class="col-sm-10">@(Model.Ativa ? "Sim" : "Não")</dd>
+
+    <dt class="col-sm-2">Criada em</dt>
+    <dd class="col-sm-10">@Model.CriadaEm.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</dd>
+</dl>
+
+<a asp-action="Edit" asp-route-identificador="@Model.Id" class="btn btn-primary">Editar</a>
+<a asp-action="Index" class="btn btn-secondary">Voltar</a>

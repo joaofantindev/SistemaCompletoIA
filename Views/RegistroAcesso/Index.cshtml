@@ -1,0 +1,86 @@
+@model IReadOnlyList<RegistroAcessoRespostaDTO>
+
+@{
+    ViewData["Title"] = "Logs de acesso e requisições";
+    var tipoAcaoSelecionado = ViewBag.TipoAcaoFiltro?.ToString() ?? string.Empty;
+    var tiposAcao = (TipoAcaoRegistro[])ViewBag.TiposAcao;
+}
+
+<h1>Logs de acesso e requisições</h1>
+
+@if (TempData["Sucesso"] is string mensagemSucesso)
+{
+    <div class="alert alert-success">@mensagemSucesso</div>
+}
+
+<form method="get" asp-action="Index" class="row g-2 align-items-end mb-3">
+    <div class="col-md-3">
+        <label for="email" class="form-label">E-mail</label>
+        <input id="email" name="email" value="@ViewBag.EmailFiltro" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label for="tipoAcao" class="form-label">Tipo de ação</label>
+        <select id="tipoAcao" name="tipoAcao" class="form-select">
+            <option value="">Todos</option>
+            @foreach (var tipoAcao in tiposAcao)
+            {
+                <option value="@tipoAcao" selected="@(tipoAcao.ToString() == tipoAcaoSelecionado)">@tipoAcao</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label for="dataInicial" class="form-label">Data inicial</label>
+        <input id="dataInicial" name="dataInicial" type="date" value="@ViewBag.DataInicialFiltro" class="form-control" />
+    </div>
+    <div class="col-md-2">
+        <label for="dataFinal" class="form-label">Data final</label>
+        <input id="dataFinal" name="dataFinal" type="date" value="@ViewBag.DataFinalFiltro" class="form-control" />
+    </div>
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+    </div>
+</form>
+
+<form asp-action="Limpar" method="post" class="mb-3">
+    <div class="input-group" style="max-width: 420px;">
+        <span class="input-group-text">Remover logs com mais de</span>
+        <input name="quantidadeDias" type="number" min="1" value="30" class="form-control" />
+        <span class="input-group-text">dia(s)</span>
+        <button type="submit" class="btn btn-outline-danger">Limpar</button>
+    </div>
+</form>
+
+<table class="table table-sm table-striped align-middle">
+    <thead>
+        <tr>
+            <th>Data</th>
+            <th>Usuário</th>
+            <th>E-mail</th>
+            <th>Ação</th>
+            <th>Método</th>
+            <th>Caminho</th>
+            <th>Status</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var registro in Model)
+    {
+        <tr>
+            <td>@registro.OcorridoEm.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</td>
+            <td>@registro.NomeUsuario</td>
+            <td>@registro.Email</td>
+            <td>@registro.TipoAcao</td>
+            <td>@registro.MetodoHttp</td>
+            <td>@registro.Caminho</td>
+            <td>@registro.CodigoStatus</td>
+            <td class="text-nowrap">
+                <a asp-action="Details" asp-route-identificador="@registro.Id">Detalhes</a> |
+                <form asp-action="Delete" asp-route-identificador="@registro.Id" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-link p-0 align-baseline">Excluir</button>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>

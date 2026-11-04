@@ -1,0 +1,57 @@
+@model IReadOnlyList<ProdutoRespostaDTO>
+
+@{
+    ViewData["Title"] = "Produtos";
+    var podeGerenciar = User.IsInRole(PerfisAcesso.Administrador) || User.IsInRole(PerfisAcesso.Proprietario);
+}
+
+<h1>Produtos</h1>
+
+@if (TempData["Sucesso"] is string mensagemSucesso)
+{
+    <div class="alert alert-success">@mensagemSucesso</div>
+}
+
+@if (podeGerenciar)
+{
+    <p>
+        <a asp-action="Create" class="btn btn-primary">Novo produto</a>
+    </p>
+}
+
+<table class="table table-striped align-middle">
+    <thead>
+        <tr>
+            <th>Nome</th>
+            <th>Marca</th>
+            <th>Categoria</th>
+            <th>Preço</th>
+            <th>Proprietário</th>
+            <th>Cadastrado em</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var produto in Model)
+    {
+        <tr>
+            <td>@produto.Nome</td>
+            <td>@produto.Marca</td>
+            <td>@produto.NomeCategoria</td>
+            <td>R$ @produto.Preco.ToString("N2")</td>
+            <td>@produto.NomeProprietario</td>
+            <td>@produto.CadastradoEm.ToLocalTime().ToString("dd/MM/yyyy")</td>
+            <td class="text-nowrap">
+                <a asp-action="Details" asp-route-identificador="@produto.Id">Detalhes</a>
+                @if (podeGerenciar)
+                {
+                    <text> | </text>
+                    <a asp-action="Edit" asp-route-identificador="@produto.Id">Editar</a>
+                    <text> | </text>
+                    <a asp-action="Delete" asp-route-identificador="@produto.Id">Excluir</a>
+                }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
