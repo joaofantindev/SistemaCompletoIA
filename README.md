@@ -333,3 +333,4 @@ Regra de ouro:
 ## 👤 Autor
 
 Projeto pessoal de estudos em .NET, com foco em **entender o porquê** de cada camada — e não apenas fazer o CRUD funcionar.
+> O SISTEMA VAI SER MELHORADO E USADO COMO BASE PARA OUTROS PROJETOS, MAIS INTELIGENTE DO QUE RECRIAR DO ZERO
